@@ -14,27 +14,31 @@ const messenger = {
 console.log(messenger);
 
 const receiveMsg = async () => {
-  const url = messenger.port && messenger.port.length ===  4 ? connect(messenger.port) : localhost();
+  try {
+    const url = messenger.port && messenger.port.length ===  4 ? connect(messenger.port) : localhost();
 
-  const connection = await amqplib.connect(url);
-  const channel = await connection.createChannel();
-
-  await channel.assertExchange(exchangeName, 'direct', { durable: true });
-
-  const q = await channel.assertQueue('', { exclusive: true });
-
-  messenger.routingKey.forEach(function (severity) {
-    channel.bindQueue(q.queue, exchangeName, severity);
-  });
-
-  console.log("\x1b[32m%s\x1b[0m", 'Listening...');
-
-  channel.consume(q.queue, msg => {
-    if (msg.content) {
-      console.log(`Message: ${msg.content.toString()}`);
-    }
-
-    }, { noAck: true })
+    const connection = await amqplib.connect(url);
+    const channel = await connection.createChannel();
+  
+    await channel.assertExchange(exchangeName, 'direct', { durable: true });
+  
+    const q = await channel.assertQueue('', { exclusive: true });
+  
+    messenger.routingKey.forEach(function (severity) {
+      channel.bindQueue(q.queue, exchangeName, severity);
+    });
+  
+    console.log("\x1b[32m%s\x1b[0m", 'Listening...');
+  
+    channel.consume(q.queue, msg => {
+      if (msg.content) {
+        console.log(`Message: ${msg.content.toString()}`);
+      }
+  
+      }, { noAck: true })
+  } catch(error) {
+    console.error(error)
+  }
 }
 
 const connect = (port) => {

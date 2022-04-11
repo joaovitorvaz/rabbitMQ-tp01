@@ -22,33 +22,37 @@ if(args[0] === 'crawler') {
 console.log(messenger);
 
 const sendMsg = async () => {
-  const url = messenger.port && messenger.port.length === 4 ? connect(messenger.port) : localhost();
+  try {
+    const url = messenger.port && messenger.port.length === 4 ? connect(messenger.port) : localhost();
 
-  const connection = await amqplib.connect(url);
-  const channel = await connection.createChannel();
-  await channel.assertExchange(exchangeName, 'direct', { durable: true });
-
-  if (messenger.msg) {
-    channel.publish(exchangeName, messenger.routingKey, Buffer.from(messenger.msg));
-    console.log("\x1b[36m%s\x1b[0m", 'Sent: ', messenger.msg);
-
-    setTimeout(() => {
-      connection.close();
-      process.exit(0);
-    }, 500)
-
-  } else {
-    const arrayMsg = await execute(messenger.usersArray, messenger.amount);
-
-    arrayMsg.forEach(msg => {
-      channel.publish(exchangeName, msg.screenName, Buffer.from(msg.text));
-      console.log("\x1b[36m%s\x1b[0m", 'Sent: ', msg.text);
-    });
-
-    setTimeout(() => {
-      connection.close();
-      process.exit(0);
-    }, 500)
+    const connection = await amqplib.connect(url);
+    const channel = await connection.createChannel();
+    await channel.assertExchange(exchangeName, 'direct', { durable: true });
+  
+    if (messenger.msg) {
+      channel.publish(exchangeName, messenger.routingKey, Buffer.from(messenger.msg));
+      console.log("\x1b[36m%s\x1b[0m", 'Sent: ', messenger.msg);
+  
+      setTimeout(() => {
+        connection.close();
+        process.exit(0);
+      }, 500)
+  
+    } else {
+      const arrayMsg = await execute(messenger.usersArray, messenger.amount);
+  
+      arrayMsg.forEach(msg => {
+        channel.publish(exchangeName, msg.screenName, Buffer.from(msg.text));
+        console.log("\x1b[36m%s\x1b[0m", 'Sent: ', msg.text);
+      });
+  
+      setTimeout(() => {
+        connection.close();
+        process.exit(0);
+      }, 500)
+    }
+  } catch(error) {
+    console.error(error)
   }
 }
 
